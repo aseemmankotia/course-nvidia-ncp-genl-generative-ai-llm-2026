@@ -1,0 +1,16 @@
+## Chapter 1: Transformer Internals: Attention, Positional Encoding, and Efficiency Variants — Flashcards
+
+| # | Front (Question) | Back (Answer) |
+|---|-----------------|---------------|
+| 1 | Scaled dot-product attention formula? | softmax(QK^T / sqrt(d_k)) V. Scaling by sqrt(d_k) prevents large dot products from pushing softmax into low-gradient saturation regions. Exam tip: know why sqrt(d_k) specifically. |
+| 2 | MHA vs GQA vs MQA — KV cache size ranking? | MHA > GQA > MQA. MHA = one KV head per query head; GQA = shared KV heads across query groups; MQA = single KV head shared by all. Exam tip: GQA is the common production compromise (Llama 2/3, Mistral). |
+| 3 | What problem does FlashAttention solve? | Avoids materializing the O(N^2) attention matrix in HBM by tiling Q/K/V into SRAM blocks with online softmax. Exact result, not an approximation. Exam tip: memory-bandwidth-bound optimization, not FLOP reduction. |
+| 4 | FlashAttention memory complexity vs standard attention? | Standard: O(N^2) memory for the attention matrix. FlashAttention: O(N) memory via tiling; FLOPs remain O(N^2). Exam tip: memory savings, not asymptotic FLOP reduction. |
+| 5 | MoE gating: what does 'top-k' routing mean? | The gating network selects the k highest-scoring experts (commonly top-1 or top-2) per token to activate, keeping compute sparse while total parameter count stays high. |
+| 6 | Mixtral 8x7B — how many experts activated per token? | Top-2 of 8 experts per token; roughly 13B active parameters out of ~47B total. Exam tip: MoE decouples total capacity from per-token compute cost. |
+| 7 | RoPE (Rotary Position Embedding) — how does it encode position? | Rotates query/key vectors by an angle proportional to absolute position, so the dot product between rotated Q and K naturally encodes relative position. Used in Llama, GPT-NeoX. Exam tip: needs scaling (NTK-aware/YaRN) to extrapolate beyond training length. |
+| 8 | ALiBi — how does it encode position? | No positional embeddings; adds a fixed linear bias penalty to attention scores proportional to query-key distance. Used in BLOOM, MPT. Exam tip: best native extrapolation to longer sequences without retraining. |
+| 9 | Absolute (sinusoidal/learned) positional encoding — key limitation? | Fixed to a max sequence length (learned) or degrades at unseen lengths (sinusoidal). Poor extrapolation vs RoPE/ALiBi. Exam tip: original Transformer (2017) and GPT-2 use this. |
+| 10 | Encoder-decoder architecture — example models and best-fit task? | T5, BART. Bidirectional encoder + cross-attending causal decoder. Best for seq2seq tasks: translation, summarization. Exam tip: cross-attention is the encoder-decoder-specific layer. |
+| 11 | Decoder-only architecture — example models and best-fit task? | GPT, Llama, Mistral. Single causal-attention stack. Best for open-ended generation and general-purpose LLM pretraining at scale. Exam tip: dominant architecture for modern general-purpose LLMs. |
+| 12 | Multi-head attention — why parallel heads instead of one large attention? | Each head projects Q/K/V into a smaller subspace (d_model/h dims) and learns to attend to different representation subspaces/positions in parallel; outputs are concatenated and linearly projected. Exam tip: head_dim = d_model / num_heads. |

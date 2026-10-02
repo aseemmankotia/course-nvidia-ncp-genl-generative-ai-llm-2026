@@ -1,0 +1,16 @@
+## Chapter 8: Inference Acceleration: TensorRT-LLM, Quantization, and Speculative Decoding — Flashcards
+
+| # | Front (Question) | Back (Answer) |
+|---|-----------------|---------------|
+| 1 | AWQ vs GPTQ: which method uses activation statistics to protect salient weights instead of Hessian-based reconstruction? | AWQ (Activation-aware Weight Quantization). GPTQ uses layer-wise Hessian-based error minimization. Exam tip: AWQ = activation-aware scaling; GPTQ = calibration + Hessian reconstruction. |
+| 2 | FP8 on H100: typical throughput gain vs FP16? | ~2x throughput with near-FP16 accuracy due to native FP8 Tensor Core support. Exam tip: FP8 requires Hopper (H100) or newer architecture. |
+| 3 | What does 'continuous batching' (in-flight batching) do differently from static batching? | Admits/evicts individual requests at each iteration/token step instead of waiting for the whole batch to finish, eliminating padding waste and head-of-line blocking. Exam tip: continuous batching = higher GPU utilization on variable-length workloads. |
+| 4 | What is 'paged KV-cache' management? | Allocates KV-cache memory in non-contiguous fixed-size blocks (like OS virtual memory paging), reducing fragmentation and enabling on-demand allocation for long/variable context lengths. |
+| 5 | Speculative decoding: what two models are involved? | A small 'draft' model proposes multiple candidate tokens; a larger 'target' model verifies them in one forward pass. Exam tip: speeds up latency by amortizing large-model calls across multiple tokens. |
+| 6 | TensorRT-LLM engine build step: what does it primarily do? | Applies hardware-specific optimizations: kernel/layer fusion, precision calibration, and memory planning compiled for a target GPU. It does not retrain weights. |
+| 7 | When is GPTQ typically preferred over AWQ? | GPTQ is often chosen when a calibration dataset is available and maximum compression (INT4/INT3) with controlled reconstruction error is needed; AWQ is often faster to apply and slightly more robust to activation outliers. |
+| 8 | Naive INT8 quantization without calibration: main risk? | Significant accuracy degradation, especially from outlier activation values not handled by scale factors. Exam trap: 'INT8 always safe' is a common wrong assumption. |
+| 9 | Which optimization directly targets throughput vs which targets latency for a single request? | Continuous batching + quantization → throughput/cost. Speculative decoding + paged KV-cache → per-request latency. Exam tip: SLA questions test matching the right lever to the target metric. |
+| 10 | FP8 vs INT4 (AWQ/GPTQ): main trade-off difference? | FP8 favors throughput with minimal accuracy loss on supported hardware (H100+); INT4 (AWQ/GPTQ) favors maximum memory reduction with a small-to-moderate accuracy trade-off, hardware-agnostic beyond basic INT support. |
+| 11 | What causes 'head-of-line blocking' in static batching? | The entire batch must wait for the longest sequence in the batch to finish generating before any new requests can be scheduled, wasting compute on already-finished short sequences. |
+| 12 | Exam scenario cue: 'minimal accuracy loss + large memory reduction + calibration dataset available' → which method? | GPTQ. Exam tip: presence of a calibration set and emphasis on reconstruction accuracy signals GPTQ over naive INT8. |

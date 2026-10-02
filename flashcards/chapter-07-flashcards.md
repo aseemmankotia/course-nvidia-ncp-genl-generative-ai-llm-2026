@@ -1,0 +1,16 @@
+## Chapter 7: Distributed Training: Data, Tensor, Pipeline, and Sequence Parallelism — Flashcards
+
+| # | Front (Question) | Back (Answer) |
+|---|-----------------|---------------|
+| 1 | ZeRO stage 1 (Pos) vs stage 2 (Pos+g) vs stage 3 (Pos+g+p) — what does each shard? | Stage 1: optimizer states only (~4x memory reduction). Stage 2: + gradients (~8x reduction). Stage 3: + parameters (reduction scales ~linearly with number of GPUs). Exam tip: more sharding = more communication overhead. |
+| 2 | Mixed-precision Adam memory per parameter without ZeRO? | 16 bytes: 2 (fp16 weight) + 2 (fp16 grad) + 4 (fp32 master weight) + 4 (fp32 momentum) + 4 (fp32 variance). This is the baseline ZeRO papers reduce. |
+| 3 | Tensor parallelism — what does it shard and what hardware does it need? | Shards weight matrices within a single layer (e.g., attention/FFN projections). Requires ~2 all-reduces per layer per forward/backward pass — needs high-bandwidth NVLink, typically confined to a single node (≤8 GPUs). |
+| 4 | Pipeline parallelism bubble fraction formula | (p - 1) / m, where p = number of pipeline stages, m = number of micro-batches. Increasing micro-batches reduces bubble overhead and improves utilization. |
+| 5 | Sequence parallelism — what problem does it solve? | Shards activations of LayerNorm/dropout regions along the sequence dimension (regions normally replicated in tensor-parallel-only setups), reducing activation memory that scales with context length. Used together with tensor parallelism. |
+| 6 | Data parallelism — what is replicated and what is synchronized? | Full model replicated on every GPU; each GPU processes a different data shard. Gradients are synchronized via all-reduce after the backward pass before the optimizer step. |
+| 7 | FP16 numerical range and stability issue | Max ~65504, min normal ~6.1e-5. Narrow dynamic range causes gradient overflow/underflow, requiring dynamic loss scaling during training. |
+| 8 | BF16 vs FP16 — key trade-off | BF16: 8-bit exponent (same range as FP32), 7-bit mantissa — no loss scaling needed but less precision. FP16: 5-bit exponent, 10-bit mantissa — more precision but narrower range requiring loss scaling. |
+| 9 | FP8 formats used in Transformer Engine (Hopper/Blackwell) | E4M3 (4 exponent, 3 mantissa bits, range ±448) typically for forward activations/weights; E5M2 (5 exponent, 2 mantissa, range ±57344) typically for gradients. Requires per-tensor dynamic scaling. |
+| 10 | Gradient checkpointing (activation recomputation) trade-off | Reduces stored activation memory (roughly to sqrt(n) of layers) by recomputing forward activations during backward pass, at the cost of ~30-40% additional compute time. |
+| 11 | When to choose tensor parallelism vs pipeline parallelism | Tensor parallelism: single layer too large for one GPU, needs fast NVLink, best within a node. Pipeline parallelism: model too deep overall, works over slower inter-node links since only activations cross stage boundaries. |
+| 12 | ZeRO stage 3 key trade-off vs stage 2 | Stage 3 shards parameters in addition to optimizer states and gradients, giving near-linear memory reduction with GPU count, but requires extra all-gather communication to reconstruct full parameters during forward/backward passes. |

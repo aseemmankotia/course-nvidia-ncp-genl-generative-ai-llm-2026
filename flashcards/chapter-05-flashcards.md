@@ -1,0 +1,16 @@
+## Chapter 5: Dataset Curation, Cleaning, and Instruction-Tuning Data Design — Flashcards
+
+| # | Front (Question) | Back (Answer) |
+|---|-----------------|---------------|
+| 1 | What does MinHash approximate, and how? | Approximates Jaccard similarity between two sets (e.g., document shingles) using multiple hash-function permutations to build a compact signature. Exam tip: MinHash is for similarity ESTIMATION, not exact matching. |
+| 2 | What problem does LSH (Locality Sensitive Hashing) solve in dedup pipelines? | Avoids O(n²) pairwise similarity comparison by bucketing MinHash signatures into bands so only documents sharing a bucket are compared as candidate near-duplicates. |
+| 3 | LSH: effect of MORE bands (b) with fewer rows (r) per band (fixed total hashes)? | Increases recall (catches more near-dup pairs) but decreases precision (more false positives). Exam tip: b/r split controls the similarity-threshold curve, not just bucket count. |
+| 4 | Exact deduplication method — typical implementation? | Hash the full (normalized) document (e.g., SHA-256/MD5) and remove documents with identical hashes. Catches byte-identical/near-identical copies only, not paraphrased or lightly-edited duplicates. |
+| 5 | Near-duplicate vs exact duplicate — key distinction for the exam | Exact = identical (or normalization-identical) content via hashing. Near-duplicate = high partial overlap detected via similarity estimation (MinHash/Jaccard), not identical bytes. |
+| 6 | Two categories of quality-filtering techniques in LLM data curation | 1) Heuristic-based (rule filters: symbol-to-word ratio, repeated n-grams, doc length) 2) Classifier-based (trained model, e.g., fastText, scores quality/language). Pipelines commonly combine both. |
+| 7 | Alpaca-style instruction format fields | instruction, (optional) input, output — the standard prompt-response triplet format used for supervised instruction fine-tuning datasets. |
+| 8 | ChatML-style format — role structure | Uses explicit role-tagged turns: system, user, assistant (e.g., <\|im_start\|>system ... <\|im_end\|>). Exam tip: consistency of system-prompt placement across the whole dataset is critical for reliable instruction following. |
+| 9 | Why must the fine-tuning tokenizer match the pretraining tokenizer? | Token IDs index the pretrained embedding matrix. A mismatched vocab/merge table maps different subwords to the same IDs, corrupting the model's learned embedding associations and degrading performance. |
+| 10 | Adding new special tokens for fine-tuning (e.g., <\|system\|>) — required step? | Must resize the model's embedding/output layer to accommodate new token IDs before training, otherwise indexing errors or untrained embedding rows occur. |
+| 11 | Data mixing ratio imbalance between pretraining and fine-tuning — main risk | Catastrophic forgetting: if a domain (e.g., code) is well-represented in pretraining but nearly absent in fine-tuning, that capability degrades as weights shift toward the fine-tune distribution. |
+| 12 | Data governance checklist before releasing a model trained on scraped/third-party data | Verify each source's license permits intended (incl. commercial) use, redact/remove PII, document data provenance. Public availability ≠ license to train/redistribute. |
